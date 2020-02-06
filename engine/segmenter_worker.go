@@ -3,6 +3,8 @@ package engine
 import (
 	"fmt"
 	// "log"
+
+	_ "github.com/huichen/sego"
 )
 
 // 文档的一个关键词
@@ -31,22 +33,35 @@ type DocumentIndexData struct {
 	Fields interface{}
 }
 
-type segmenterRequest struct {
-	docId       uint64
-	hash        uint32
-	data        DocumentIndexData
-	forceUpdate bool
-}
+// type segmenterRequest struct {
+// 	docId       uint64
+// 	hash        uint32
+// 	data        DocumentIndexData
+// 	forceUpdate bool
+// }
 
-func (engine *Engine) segmenterWorker() {
-	for {
-		request := <-engine.segmenterChannel
-		fmt.Println("segmenterWorker start")
-		fmt.Println(request)
-		fmt.Println("segmenterWorker end")
-	}
-}
+// type EngineSegmenter struct {
+// 	*Engine
+// 	segmenter sego.Segmenter
+// 	channel   chan segmenterRequest
+// }
 
-// 关闭引擎
-func (engine *Engine) Close() {
-}
+// func (engine *EngineSegmenter) Init() {
+// 	engine.segmenter.LoadDictionary("./data/dictionary.txt")
+
+// 	engine.channel = make(chan segmenterRequest, 1)
+// 	// 初始化停用词
+// 	// engine.stopTokens.Init(options.StopTokenFile)
+
+// 	go engine.segmenterWorker()
+// }
+
+// func (engine *EngineSegmenter) segmenterWorker() {
+// 	fmt.Println("segmenterWorker ...")
+// 	for {
+// 		request := <-engine.channel
+// 		fmt.Println("segmenterWorker start")
+// 		fmt.Println(request)
+// 		fmt.Println("segmenterWorker end")
+// 	}
+// }
