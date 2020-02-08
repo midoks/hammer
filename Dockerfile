@@ -53,7 +53,6 @@ RUN mkdir -p /app/conf
 RUN mkdir -p /conf
 
 COPY --from=binarybuilder /go/src/github.com/midoks/hammer/hammer /app
-ADD /conf /app/conf
 ADD /conf /conf
 EXPOSE 80
 
