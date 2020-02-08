@@ -47,8 +47,7 @@ RUN apk --no-cache --no-progress add \
     strace
 
 
-    
-COPY --from=binarybuilder /hammer .
-EXPOSE 3000
+COPY --from=binarybuilder /go/src/github.com/midoks/hammer/hammer .
+EXPOSE 22
 
 ENTRYPOINT ["./hammer"]
