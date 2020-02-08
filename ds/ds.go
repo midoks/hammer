@@ -12,7 +12,9 @@ type DateSourceIf interface {
 func Factory(name string) DateSourceIf {
 	switch name {
 	case "mysql":
-		return &DataSourceMySQL{}
+		ds := &DataSourceMySQL{}
+		ds.InitConn()
+		return ds
 	default:
 		panic("No such animal")
 	}

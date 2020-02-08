@@ -7,20 +7,30 @@ import (
 )
 
 type DataSourceMySQL struct {
+	Conn *sql.DB
 }
 
 func (ds *DataSourceMySQL) Import() bool {
 	return true
 }
 
-func (ds *DataSourceMySQL) GetData() string {
-	dbDSN := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s", "root", "root", "127.0.0.1", "3306", "ttfund", "utf8")
+func (ds *DataSourceMySQL) InitConn() error {
 
-	mdb, _ := sql.Open("mysql", dbDSN)
+	dbDSN := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s", "root", "root", "127.0.0.1", "3306", "ttfund", "utf8")
+	conn, err := sql.Open("mysql", dbDSN)
+
+	if err != nil {
+		return err
+	}
+
+	ds.Conn = conn
+	return nil
+}
+
+func (ds *DataSourceMySQL) GetData() string {
 
 	mSql := fmt.Sprintf("select * from tt_fund limit 1000 offset %d", 0)
-
-	rows, err := mdb.Query(mSql)
+	rows, err := ds.Conn.Query(mSql)
 
 	if err != nil {
 		panic(err)
@@ -34,7 +44,8 @@ func (ds *DataSourceMySQL) GetData() string {
 	for k, _ := range vals {
 		scans[k] = &vals[k]
 	}
-
+	i := 0
+	result := make(map[int]map[string]string)
 	for rows.Next() {
 
 		rows.Scan(scans...)
@@ -44,9 +55,12 @@ func (ds *DataSourceMySQL) GetData() string {
 			row[key] = string(v)
 		}
 
-		fmt.Println(row)
+		result[i] = row
+		i++
 	}
 	rows.Close()
+
+	fmt.Println(result)
 
 	return "12"
 }

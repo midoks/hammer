@@ -8,10 +8,18 @@ import (
 	"os"
 )
 
+type ConfFileConn struct {
+	Port      int
+	User      string
+	Pwd       string
+	Db        string
+}
+
 type ConfFile struct {
 	Type  string
 	Name  string
 	Pk    string
+	Conn  ConfFileConn
 	Sql   string
 	Step  int
 	Start int
