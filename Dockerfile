@@ -15,16 +15,16 @@ RUN apk --no-cache --no-progress add --virtual \
     linux-pam-dev \
     curl
 
-RUN go get -x github.com/gin-gonic/gin
-RUN go get -x github.com/robfig/cron
 
-ENV GOROOT=/go
+
+ENV GOPATH=/go
+ENV GOROOT=/usr/local/go
 ENV GOBIN=$GOPATH/bin
 
-
 WORKDIR /
-COPY . .
-RUN cd ./ && go build hammer.go
+RUN mkdir -p /go/src/github.com/midoks/hammer
+COPY . /go/src/github.com/midoks/hammer
+RUN cd /go/src/github.com/midoks/hammer && go build hammer.go
 
 FROM alpine:latest
 
