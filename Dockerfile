@@ -15,7 +15,10 @@ RUN apk --no-cache --no-progress add --virtual \
     linux-pam-dev \
     curl
 
+RUN mkdir -p /go/src/golang.org
+COPY ./vendor/golang.org /go/src/golang.org
 
+RUN go get -x github.com/mattn/go-isatty
 
 ENV GOPATH=/go
 ENV GOROOT=/usr/local/go
