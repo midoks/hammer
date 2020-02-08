@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/midoks/hammer/ds"
+	_ "github.com/robfig/cron"
 	"io/ioutil"
 	"os"
 )
@@ -53,10 +54,22 @@ func ReadConf(path string, call func(conf *ConfFile)) {
 	}
 }
 
+func Init() {
+}
+
 func Run(cf *ConfFile) {
+
 	dsObj := ds.Factory(cf.Type)
 
-	v := dsObj.GetData()
+	go dsObj.Import()
+	go dsObj.Task()
 
-	fmt.Println(v)
+	// for {
+	// 	d := dsObj.DataChan
+	// 	fmt.Println(d)
+	// }
+
+	v, err := dsObj.GetData()
+
+	fmt.Println(v, err)
 }
