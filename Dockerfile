@@ -49,7 +49,6 @@ RUN apk --no-cache --no-progress add \
     strace
 
 RUN mkdir -p /app
-RUN mkdir -p /app/conf
 RUN mkdir -p /conf
 
 COPY --from=binarybuilder /go/src/github.com/midoks/hammer/hammer /app
