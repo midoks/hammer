@@ -9,6 +9,7 @@ import (
 )
 
 type ConfFileConn struct {
+	Localhost string
 	Port      int
 	User      string
 	Pwd       string
