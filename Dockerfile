@@ -48,8 +48,13 @@ RUN apk --no-cache --no-progress add \
     rsync \
     strace
 
+RUN mkdir -p /app
+RUN mkdir -p /app/conf
+RUN mkdir -p /conf
 
-COPY --from=binarybuilder /go/src/github.com/midoks/hammer/hammer .
-EXPOSE 22
+COPY --from=binarybuilder /go/src/github.com/midoks/hammer/hammer /app
+ADD /conf /app/conf
+ADD /conf /conf
+EXPOSE 80
 
-ENTRYPOINT ["./hammer"]
+ENTRYPOINT ["./app/hammer"]
