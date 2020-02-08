@@ -5,15 +5,16 @@ import (
 )
 
 type DateSourceIf interface {
-	Import() bool
-	GetData() string
+	Import()
+	Task()
+	GetData() (map[int]map[string]string, error)
 }
 
 func Factory(name string) DateSourceIf {
 	switch name {
 	case "mysql":
 		ds := &DataSourceMySQL{}
-		ds.InitConn()
+		ds.Init()
 		return ds
 	default:
 		panic("No such animal")
