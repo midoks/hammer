@@ -27,8 +27,11 @@ func So(c *gin.Context) {
 	reader, _ := index.OpenDirectoryReader(directory) //打开reader
 	searcher := search.NewIndexSearcher(reader)       //创建searcher
 
-	q := search.NewTermQuery(index.NewTerm("text", "新华")) //termquery  目前只发现有termquery 和 boolean Query 其他的span profix phrase 这些应该是没有 因为用的term所以是产于分词的分词器是单字切分，所以只用一个雨字来搜索
-	res, _ := searcher.Search(q, nil, 1000)               //result search 中传入query filter 和返回的条数
+	key := c.Query("q")
+	fmt.Println(key)
+
+	q := search.NewTermQuery(index.NewTerm("name", key)) //termquery  目前只发现有termquery 和 boolean Query 其他的span profix phrase 这些应该是没有 因为用的term所以是产于分词的分词器是单字切分，所以只用一个雨字来搜索
+	res, _ := searcher.Search(q, nil, 1000)              //result search 中传入query filter 和返回的条数
 	fmt.Printf("Found %v hit(s).\n", res.TotalHits)
 	for _, hit := range res.ScoreDocs {
 		fmt.Printf("Doc %v score: %v\n", hit.Doc, hit.Score)
