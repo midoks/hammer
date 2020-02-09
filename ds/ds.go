@@ -15,6 +15,14 @@ type SaveStatus struct {
 	CurrentTime string
 }
 
+func (ss *SaveStatus) Read() {
+
+}
+
+func (ss *SaveStatus) Save() {
+
+}
+
 func Factory(name string) DateSourceIf {
 	switch name {
 	case "mysql":

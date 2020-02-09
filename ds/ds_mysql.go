@@ -7,7 +7,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/midoks/hammer/storage"
 	"io/ioutil"
-	// "os"
+	"os"
 )
 
 type DataSourceMySQL struct {
@@ -15,12 +15,27 @@ type DataSourceMySQL struct {
 	DataChan chan map[int]map[string]string
 }
 
-func (ds *DataSourceMySQL) getPage(p int) (map[int]map[string]string, error) {
+func (ds *DataSourceMySQL) getPage(p int, s int) (map[int]map[string]string, error) {
 	result := make(map[int]map[string]string)
 
-	p = 1 * (p)
+	p = s * p
 
-	mSql := fmt.Sprintf("select * from tt_fund limit 1 offset %d", p)
+	filePtr, err := os.Open("conf/test/__tmp.json")
+	if err != nil {
+		fmt.Println(err)
+	}
+	rd, err := ioutil.ReadAll(filePtr)
+	if err != nil {
+		fmt.Println(err)
+	}
+	cf := &SaveStatus{}
+	_ = json.Unmarshal([]byte(rd), cf)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	fmt.Println(cf)
+
+	mSql := fmt.Sprintf("select * from tt_fund limit %d offset %d", s, p)
 	fmt.Println(mSql)
 	rows, err := ds.Conn.Query(mSql)
 
@@ -59,7 +74,7 @@ func (ds *DataSourceMySQL) Import() {
 	// i := 0
 	for i := 0; i < 3; i++ {
 
-		result, err := ds.getPage(i)
+		result, err := ds.getPage(i, 10)
 		if err != nil {
 			break
 		}
