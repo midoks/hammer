@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/midoks/hammer/ds"
+	"github.com/midoks/hammer/storage"
 	_ "github.com/robfig/cron"
 	"io/ioutil"
 	"os"
@@ -61,8 +62,10 @@ func Run(cf *ConfFile) {
 
 	dsObj := ds.Factory(cf.Type)
 
-	go dsObj.Import()
-	go dsObj.Task()
+	// go dsObj.Import()
+	// go dsObj.Task()
+
+	storage.Run()
 
 	// for {
 	// 	d := dsObj.DataChan
