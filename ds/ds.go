@@ -10,6 +10,11 @@ type DateSourceIf interface {
 	GetData() (map[int]map[string]string, error)
 }
 
+type SaveStatus struct {
+	ID          string
+	CurrentTime string
+}
+
 func Factory(name string) DateSourceIf {
 	switch name {
 	case "mysql":

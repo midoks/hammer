@@ -2,8 +2,12 @@ package ds
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/midoks/hammer/storage"
+	"io/ioutil"
+	// "os"
 )
 
 type DataSourceMySQL struct {
@@ -14,7 +18,9 @@ type DataSourceMySQL struct {
 func (ds *DataSourceMySQL) getPage(p int) (map[int]map[string]string, error) {
 	result := make(map[int]map[string]string)
 
-	mSql := fmt.Sprintf("select * from tt_fund limit 3 offset %d", p)
+	p = 1 * (p)
+
+	mSql := fmt.Sprintf("select * from tt_fund limit 1 offset %d", p)
 	fmt.Println(mSql)
 	rows, err := ds.Conn.Query(mSql)
 
@@ -50,8 +56,8 @@ func (ds *DataSourceMySQL) getPage(p int) (map[int]map[string]string, error) {
 
 func (ds *DataSourceMySQL) Import() {
 
-	i := 0
-	for {
+	// i := 0
+	for i := 0; i < 3; i++ {
 
 		result, err := ds.getPage(i)
 		if err != nil {
@@ -63,14 +69,34 @@ func (ds *DataSourceMySQL) Import() {
 		}
 
 		ds.DataChan <- result
-		i++
+		// i++
 	}
 }
 
 func (ds *DataSourceMySQL) Task() {
 	for {
 		d := <-ds.DataChan
-		fmt.Println("Task", d)
+		sl := storage.Factory("lucene")
+		dlen := len(d)
+		for i := 0; i < dlen; i++ {
+			sl.Add(d[i])
+		}
+
+		v := SaveStatus{
+			ID:          d[dlen-1]["id"],
+			CurrentTime: "1",
+		}
+
+		b, err := json.Marshal(v)
+		if err != nil {
+			fmt.Println("error:", err)
+		}
+
+		err = ioutil.WriteFile("conf/test/__tmp.json", b, 0777)
+		if err != nil {
+			fmt.Println("error:", err)
+		}
+
 	}
 }
 
