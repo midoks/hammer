@@ -4,15 +4,23 @@ import (
 	"fmt"
 )
 
+var (
+	ENGINE_TYPE_LUCENE = "lucene"
+	ENGINE_TYPE_WUKONG = "wukong"
+)
+
 type StorageIf interface {
 	Add(map[string]string)
 }
 
 func Factory(name string) StorageIf {
 	switch name {
-	case "lucene":
+	case ENGINE_TYPE_LUCENE:
 		sl := &StorageLucene{}
 		return sl
+	case ENGINE_TYPE_WUKONG:
+		sw := &StorageWukong{}
+		return sw
 	default:
 		panic("No such animal")
 	}

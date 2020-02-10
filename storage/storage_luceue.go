@@ -38,7 +38,7 @@ func (sl *StorageLucene) Add(data map[string]string) {
 	// }
 
 	d := document.NewDocument()                                                      //创建doucument
-	d.Add(document.NewTextFieldFromString("name", data["name"], document.STORE_YES)) //添加域信息
+	d.Add(document.NewTextFieldFromString("text", data["name"], document.STORE_YES)) //添加域信息
 	fmt.Println("d.Fields():", d.Fields())
 	writer.AddDocument(d.Fields())
 	defer writer.Close()

@@ -4,6 +4,7 @@ import (
 	_ "encoding/json"
 	_ "fmt"
 	"github.com/midoks/hammer/api"
+	"github.com/midoks/hammer/configure"
 	"github.com/midoks/hammer/indexer"
 	"github.com/robfig/cron"
 	_ "io/ioutil"
@@ -47,8 +48,8 @@ func main() {
 
 	cronInit()
 
-	indexer.ReadConf("conf", func(cf *indexer.ConfFile) {
-		indexer.Run(cf)
+	configure.Read("conf", func(cf *configure.Args) {
+		go indexer.Run(cf)
 	})
 
 	api.Run()

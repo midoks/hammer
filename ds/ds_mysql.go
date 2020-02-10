@@ -2,41 +2,35 @@ package ds
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/midoks/hammer/configure"
 	"github.com/midoks/hammer/storage"
-	"io/ioutil"
-	"os"
+	"log"
+	"strconv"
+	"time"
 )
 
 type DataSourceMySQL struct {
 	Conn     *sql.DB
 	DataChan chan map[int]map[string]string
+	SS       SaveStatus
+	Conf     *configure.Args
 }
 
 func (ds *DataSourceMySQL) getPage(p int, s int) (map[int]map[string]string, error) {
-	result := make(map[int]map[string]string)
 
+	result := make(map[int]map[string]string)
 	p = s * p
 
-	filePtr, err := os.Open("conf/test/__tmp.json")
-	if err != nil {
-		fmt.Println(err)
-	}
-	rd, err := ioutil.ReadAll(filePtr)
-	if err != nil {
-		fmt.Println(err)
-	}
-	cf := &SaveStatus{}
-	_ = json.Unmarshal([]byte(rd), cf)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	fmt.Println(cf)
+	err := ds.SS.Read("conf/test/__tmp.json")
 
-	mSql := fmt.Sprintf("select * from tt_fund limit %d offset %d", s, p)
-	fmt.Println(mSql)
+	mSql := fmt.Sprintf("select * from tt_fund where id>%d limit %d offset %d", ds.SS.ID, s, p)
+	if err != nil {
+		mSql = fmt.Sprintf("select * from tt_fund limit %d offset %d", s, p)
+	}
+
+	log.Println(mSql)
 	rows, err := ds.Conn.Query(mSql)
 
 	if err != nil {
@@ -71,10 +65,10 @@ func (ds *DataSourceMySQL) getPage(p int, s int) (map[int]map[string]string, err
 
 func (ds *DataSourceMySQL) Import() {
 
-	// i := 0
-	for i := 0; i < 3; i++ {
+	i := 0
+	for {
 
-		result, err := ds.getPage(i, 10)
+		result, err := ds.getPage(i, 1000)
 		if err != nil {
 			break
 		}
@@ -84,39 +78,39 @@ func (ds *DataSourceMySQL) Import() {
 		}
 
 		ds.DataChan <- result
-		// i++
+		i++
 	}
 }
 
 func (ds *DataSourceMySQL) Task() {
 	for {
 		d := <-ds.DataChan
-		sl := storage.Factory("lucene")
+		sl := storage.Factory(storage.ENGINE_TYPE_LUCENE)
 		dlen := len(d)
 		for i := 0; i < dlen; i++ {
 			sl.Add(d[i])
 		}
 
-		v := SaveStatus{
-			ID:          d[dlen-1]["id"],
-			CurrentTime: "1",
-		}
-
-		b, err := json.Marshal(v)
+		updateLastId, err := strconv.ParseInt(d[dlen-1]["id"], 10, 64)
 		if err != nil {
-			fmt.Println("error:", err)
+			log.Println(err)
 		}
 
-		err = ioutil.WriteFile("conf/test/__tmp.json", b, 0777)
+		err = ds.SS.Save(updateLastId, "conf/test/__tmp.json")
 		if err != nil {
-			fmt.Println("error:", err)
+			log.Println(err)
 		}
-
 	}
 }
 
-func (ds *DataSourceMySQL) Init() {
+func (ds *DataSourceMySQL) Init(conf *configure.Args) {
 	ds.DataChan = make(chan map[int]map[string]string, 1000)
+	ds.Conf = conf
+	ctime := time.Now().Format("2006-01-02 15:04:05")
+	ds.SS = SaveStatus{
+		ID:          int64(0),
+		CurrentTime: ctime,
+	}
 	ds.InitConn()
 }
 
