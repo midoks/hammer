@@ -71,6 +71,5 @@ func Factory(conf *configure.Args) DateSourceIf {
 }
 
 func Run() {
-
 	fmt.Println("ds!")
 }

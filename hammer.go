@@ -10,6 +10,7 @@ import (
 	_ "io/ioutil"
 	"log"
 	_ "os"
+	"runtime"
 	_ "time"
 )
 
@@ -45,6 +46,8 @@ func print15() {
 }
 
 func main() {
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	cronInit()
 
