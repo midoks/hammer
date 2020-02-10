@@ -13,6 +13,7 @@ type ArgsConn struct {
 	User      string
 	Pwd       string
 	Db        string
+	Charset   string
 }
 
 type Args struct {
