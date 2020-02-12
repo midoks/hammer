@@ -66,7 +66,9 @@ func Factory(conf *configure.Args) DateSourceIf {
 		ds.Init(conf)
 		return ds
 	default:
-		panic("No such animal")
+		ds := &DataSourceMySQL{}
+		ds.Init(conf)
+		return ds
 	}
 }
 

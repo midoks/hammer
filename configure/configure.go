@@ -11,19 +11,20 @@ type ArgsConn struct {
 	Localhost string
 	Port      int
 	User      string
-	Pwd       string
+	Password  string
 	Db        string
 	Charset   string
 }
 
 type Args struct {
-	Type  string
-	Name  string
-	Pk    string
-	Conn  ArgsConn
-	Sql   string
-	Step  int
-	Start int
+	Type    string
+	Path    string
+	AppName string
+	Pk      string
+	Conn    ArgsConn
+	Sql     string
+	Step    int
+	Start   int
 }
 
 func Read(path string, call func(conf *Args)) {
@@ -46,6 +47,8 @@ func Read(path string, call func(conf *Args)) {
 		a := &Args{}
 		err = json.Unmarshal([]byte(c), &a)
 		if err == nil {
+			a.Path = path
+			a.AppName = fi.Name()
 			call(a)
 		} else {
 			fmt.Println("path:conf/%s json has error!", fi.Name())

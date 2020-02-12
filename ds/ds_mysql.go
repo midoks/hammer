@@ -23,12 +23,11 @@ func (ds *DataSourceMySQL) getPage(p int, s int) (map[int]map[string]string, err
 	result := make(map[int]map[string]string)
 	p = s * p
 
-	err := ds.SS.Read("conf/test/__tmp.json")
-
-	mSql := fmt.Sprintf("select * from tt_fund where id>%d limit %d offset %d", ds.SS.ID, s, p)
-	if err != nil {
-		mSql = fmt.Sprintf("select * from tt_fund limit %d offset %d", s, p)
-	}
+	err := ds.SS.Read(ds.getTmpFile())
+	mSql := fmt.Sprintf("%s where id>%d limit %d offset %d", ds.getQuerySql(), ds.SS.ID, s, p)
+	// if err != nil {
+	// 	mSql = fmt.Sprintf("%s limit %d offset %d", ds.getQuerySql(), s, p)
+	// }
 
 	log.Println(mSql)
 	rows, err := ds.Conn.Query(mSql)
@@ -96,7 +95,7 @@ func (ds *DataSourceMySQL) Task() {
 			log.Println(err)
 		}
 
-		err = ds.SS.Save(updateLastId, "conf/test/__tmp.json")
+		err = ds.SS.Save(updateLastId, ds.getTmpFile())
 		if err != nil {
 			log.Println(err)
 		}
@@ -114,9 +113,26 @@ func (ds *DataSourceMySQL) Init(conf *configure.Args) {
 	ds.InitConn()
 }
 
-func (ds *DataSourceMySQL) InitConn() error {
+func (ds *DataSourceMySQL) getDsn() string {
 
-	dbDSN := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s", "root", "root", "127.0.0.1", "3306", "ttfund", "utf8")
+	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s", ds.Conf.Conn.User,
+		ds.Conf.Conn.Password,
+		ds.Conf.Conn.Localhost,
+		ds.Conf.Conn.Port,
+		ds.Conf.Conn.Db,
+		ds.Conf.Conn.Charset)
+}
+
+func (ds *DataSourceMySQL) getTmpFile() string {
+	return fmt.Sprintf("%s/%s/__tmp.json", ds.Conf.Path, ds.Conf.AppName)
+}
+
+func (ds *DataSourceMySQL) getQuerySql() string {
+	return fmt.Sprintf("%s", ds.Conf.Sql)
+}
+
+func (ds *DataSourceMySQL) InitConn() error {
+	dbDSN := ds.getDsn()
 	conn, err := sql.Open("mysql", dbDSN)
 
 	if err != nil {
@@ -131,7 +147,7 @@ func (ds *DataSourceMySQL) GetData() (map[int]map[string]string, error) {
 
 	result := make(map[int]map[string]string)
 
-	mSql := fmt.Sprintf("select * from tt_fund limit 1 offset %d", 0)
+	mSql := fmt.Sprintf("%s limit 1 offset %d", ds.getQuerySql(), 0)
 	rows, err := ds.Conn.Query(mSql)
 
 	if err != nil {

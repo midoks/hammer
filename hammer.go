@@ -45,10 +45,13 @@ func print15() {
 	log.Println("Run 15s cron")
 }
 
+func initSetting() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+}
+
 func main() {
 
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
+	initSetting()
 	cronInit()
 
 	configure.Read("conf", func(cf *configure.Args) {
