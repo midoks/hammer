@@ -11,38 +11,21 @@ import (
 	"log"
 	_ "os"
 	"runtime"
-	_ "time"
+	"time"
 )
 
 func cronInit() {
-	// go func() {
-	crontab := cron.New()
+	nyc, _ := time.LoadLocation("Asia/Shanghai")
+	crontab := cron.New(cron.WithSeconds(), cron.WithLocation(nyc))
 
-	i := 0
 	log.Println("Run Test AddFunc")
-	crontab.AddFunc("* * * * * ?", func() {
+	crontab.AddFunc("@every 3s", func() {
 		log.Println("ddd")
-		i++
-		log.Println("cron running:", i)
-
 	})
 
 	// crontab.AddFunc("@every 1s", print15)
 	crontab.Start()
-	defer crontab.Stop()
-	// }()
-}
-
-func print5() {
-	log.Println("Run 5s cron")
-}
-
-func print10() {
-	log.Println("Run 10s cron")
-}
-
-func print15() {
-	log.Println("Run 15s cron")
+	// defer crontab.Stop()
 }
 
 func initSetting() {
@@ -51,7 +34,7 @@ func initSetting() {
 
 func main() {
 
-	initSetting()
+	// initSetting()
 	cronInit()
 
 	configure.Read("conf", func(cf *configure.Args) {
