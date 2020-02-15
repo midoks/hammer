@@ -84,7 +84,7 @@ func (ds *DataSourceMySQL) Import() {
 func (ds *DataSourceMySQL) Task() {
 	for {
 		d := <-ds.DataChan
-		sl := storage.Factory(storage.ENGINE_TYPE_LUCENE)
+		sl := storage.OpenStorage(storage.ENGINE_TYPE_LUCENE)
 		dlen := len(d)
 		for i := 0; i < dlen; i++ {
 			sl.Add(d[i])

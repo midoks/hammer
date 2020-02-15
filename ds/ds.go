@@ -59,7 +59,7 @@ func (ss *SaveStatus) Save(id int64, path string) error {
 	return nil
 }
 
-func Factory(conf *configure.Args) DateSourceIf {
+func OpenDS(conf *configure.Args) DateSourceIf {
 	switch conf.Type {
 	case DS_TYPE_MYSQL:
 		ds := &DataSourceMySQL{}

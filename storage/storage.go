@@ -13,7 +13,7 @@ type StorageIf interface {
 	Add(map[string]string)
 }
 
-func Factory(name string) StorageIf {
+func OpenStorage(name string) StorageIf {
 	switch name {
 	case ENGINE_TYPE_LUCENE:
 		sl := &StorageLucene{}

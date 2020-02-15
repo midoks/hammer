@@ -3,19 +3,22 @@ package indexer
 import (
 	"fmt"
 	"github.com/midoks/hammer/configure"
+	"github.com/midoks/hammer/cron"
 	"github.com/midoks/hammer/ds"
-	_ "github.com/midoks/hammer/storage"
-	_ "github.com/robfig/cron"
+	"log"
 )
 
 func Run(cf *configure.Args) {
 
-	dsObj := ds.Factory(cf)
+	ods := ds.OpenDS(cf)
 
-	go dsObj.Import()
-	go dsObj.Task()
+	go ods.Import()
+	go ods.Task()
 
-	v, err := dsObj.GetData()
+	cron.Add("@every 3s", func() {
+		log.Println("indexr cron! 3s")
+		r, _ := ods.GetData()
+		fmt.Println(r)
+	})
 
-	fmt.Println(v, err)
 }
