@@ -2,6 +2,7 @@ package ds
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/midoks/hammer/configure"
@@ -11,6 +12,11 @@ import (
 	"time"
 )
 
+var (
+	CONSTANT_PK   = "id"
+	CONSTANT_STEP = 1000
+)
+
 type DataSourceMySQL struct {
 	Conn     *sql.DB
 	DataChan chan map[int]map[string]string
@@ -18,22 +24,12 @@ type DataSourceMySQL struct {
 	Conf     *configure.Args
 }
 
-func (ds *DataSourceMySQL) getPage(p int, s int) (map[int]map[string]string, error) {
-
+func (ds *DataSourceMySQL) getResult(sql string) map[int]map[string]string {
 	result := make(map[int]map[string]string)
-	p = s * p
 
-	err := ds.SS.Read(ds.getTmpFile())
-	mSql := fmt.Sprintf("%s where id>%d limit %d offset %d", ds.getQuerySql(), ds.SS.ID, s, p)
-	// if err != nil {
-	// 	mSql = fmt.Sprintf("%s limit %d offset %d", ds.getQuerySql(), s, p)
-	// }
-
-	log.Println(mSql)
-	rows, err := ds.Conn.Query(mSql)
-
+	rows, err := ds.Conn.Query(sql)
 	if err != nil {
-		return result, err
+		return result
 	}
 
 	cols, _ := rows.Columns()
@@ -59,15 +55,41 @@ func (ds *DataSourceMySQL) getPage(p int, s int) (map[int]map[string]string, err
 		i++
 	}
 	rows.Close()
+	return result
+}
+
+func (ds *DataSourceMySQL) getPage(p int64, s int) (map[int]map[string]string, error) {
+
+	result := make(map[int]map[string]string)
+	offset := int64(s) * int64(p)
+
+	err := ds.SS.Read(ds.getTmpFile())
+	var mSql string
+
+	query, err := ds.getQuerySql()
+	if err != nil {
+		return result, err
+	}
+
+	if err != nil {
+		pk := ds.getPk()
+		mSql = fmt.Sprintf("%s where %s>%d limit %d offset %d", query, pk, ds.SS.ID, s, offset)
+	} else {
+		mSql = fmt.Sprintf("%s limit %d offset %d", query, s, p)
+	}
+
+	log.Println(mSql)
+
+	result = ds.getResult(mSql)
 	return result, nil
 }
 
 func (ds *DataSourceMySQL) Import() {
 
-	i := 0
+	var i int64 = 0
 	for {
 
-		result, err := ds.getPage(i, 1000)
+		result, err := ds.getPage(i, ds.getPageStep())
 		if err != nil {
 			break
 		}
@@ -78,7 +100,54 @@ func (ds *DataSourceMySQL) Import() {
 
 		ds.DataChan <- result
 		i++
+
+		//间隔时间
+		time.Sleep(time.Second)
 	}
+}
+
+func (ds *DataSourceMySQL) DeltaData() {
+
+	// result := make(map[int]map[string]string)
+
+	// mSql := fmt.Sprintf("%s limit 0 offset %d", ds.getQuerySql(), 0)
+	// rows, err := ds.Conn.Query(mSql)
+
+	// if err != nil {
+	// 	return
+	// }
+
+	// cols, _ := rows.Columns()
+
+	// scans := make([]interface{}, len(cols))
+	// vals := make([][]byte, len(cols))
+
+	// for k, _ := range vals {
+	// 	scans[k] = &vals[k]
+	// }
+
+	// i := 0
+	// for rows.Next() {
+
+	// 	rows.Scan(scans...)
+	// 	row := make(map[string]string)
+	// 	for k, v := range vals {
+	// 		key := cols[k]
+	// 		row[key] = string(v)
+	// 	}
+
+	// 	result[i] = row
+	// 	i++
+	// }
+	// rows.Close()
+
+	// fmt.Println(result)
+
+	// ds.DataChan <- result
+}
+
+func (ds *DataSourceMySQL) DeleteData() {
+
 }
 
 func (ds *DataSourceMySQL) Task() {
@@ -113,6 +182,18 @@ func (ds *DataSourceMySQL) Init(conf *configure.Args) {
 	ds.InitConn()
 }
 
+func (ds *DataSourceMySQL) InitConn() error {
+	dbDSN := ds.getDsn()
+	conn, err := sql.Open("mysql", dbDSN)
+
+	if err != nil {
+		return err
+	}
+
+	ds.Conn = conn
+	return nil
+}
+
 func (ds *DataSourceMySQL) getDsn() string {
 
 	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s", ds.Conf.Conn.User,
@@ -127,56 +208,23 @@ func (ds *DataSourceMySQL) getTmpFile() string {
 	return fmt.Sprintf("%s/%s/__tmp.json", ds.Conf.Path, ds.Conf.AppName)
 }
 
-func (ds *DataSourceMySQL) getQuerySql() string {
-	return fmt.Sprintf("%s", ds.Conf.Sql)
+func (ds *DataSourceMySQL) getQuerySql() (string, error) {
+	if ds.Conf.Query == "" {
+		return ds.Conf.Query, errors.New("query args is empty!")
+	}
+	return ds.Conf.Query, nil
 }
 
-func (ds *DataSourceMySQL) InitConn() error {
-	dbDSN := ds.getDsn()
-	conn, err := sql.Open("mysql", dbDSN)
-
-	if err != nil {
-		return err
+func (ds *DataSourceMySQL) getPk() string {
+	if ds.Conf.Pk == "" {
+		return CONSTANT_PK
 	}
-
-	ds.Conn = conn
-	return nil
+	return ds.Conf.Pk
 }
 
-func (ds *DataSourceMySQL) GetData() (map[int]map[string]string, error) {
-
-	result := make(map[int]map[string]string)
-
-	mSql := fmt.Sprintf("%s limit 1 offset %d", ds.getQuerySql(), 0)
-	rows, err := ds.Conn.Query(mSql)
-
-	if err != nil {
-		return result, err
+func (ds *DataSourceMySQL) getPageStep() int {
+	if ds.Conf.Step == 0 {
+		return CONSTANT_STEP
 	}
-
-	cols, _ := rows.Columns()
-
-	scans := make([]interface{}, len(cols))
-	vals := make([][]byte, len(cols))
-
-	for k, _ := range vals {
-		scans[k] = &vals[k]
-	}
-
-	i := 0
-	for rows.Next() {
-
-		rows.Scan(scans...)
-		row := make(map[string]string)
-		for k, v := range vals {
-			key := cols[k]
-			row[key] = string(v)
-		}
-
-		result[i] = row
-		i++
-	}
-	rows.Close()
-
-	return result, nil
+	return ds.Conf.Step
 }

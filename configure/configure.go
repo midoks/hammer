@@ -18,14 +18,15 @@ type ArgsConn struct {
 }
 
 type Args struct {
-	Type    string
-	Path    string
-	AppName string
-	Pk      string
-	Conn    ArgsConn
-	Sql     string
-	Step    int
-	Start   int
+	Path     string
+	AppName  string
+	Type     string
+	Conn     ArgsConn
+	Pk       string
+	Query    string
+	Step     int
+	Start    int64
+	Interval string
 }
 
 /** 替换注释 */
@@ -38,10 +39,12 @@ func ReplaceConfComment(s string) string {
 	return s
 }
 
+/* 监控配置文件 */
 func Watcher() {
 
 }
 
+/* 读取配置文件 */
 func Read(path string, call func(conf *Args)) {
 	flist, err := ioutil.ReadDir(path)
 	if err != nil {

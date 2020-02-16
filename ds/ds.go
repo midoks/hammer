@@ -16,7 +16,8 @@ var (
 type DateSourceIf interface {
 	Import()
 	Task()
-	GetData() (map[int]map[string]string, error)
+	DeltaData()
+	DeleteData()
 }
 
 type SaveStatus struct {

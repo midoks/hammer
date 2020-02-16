@@ -1,0 +1,35 @@
+/*
+  type                | 类型
+  query               | 获取全部数据的SQL
+  delta_import_query  | 是获取增量数据时使用的SQL 
+  delta_query         | 是获取pk的SQL
+  deleted_pk_query    | 增量索引删除主键ID查询
+*/
+{
+	"type":"mysql",
+	"conn":{
+		"localhost":"127.0.0.1",
+		"port":3306,
+		"user":"root",
+		"password":"root",
+		"db":"ttfund",
+		"charset":"utf8"
+	},
+	"pk":"id",
+
+	/* 全量导入 */
+	"query":"select * from tt_fund",
+	"start":0,
+	"step":1000,
+
+	/* 增量倒入 */
+	"delta_import_query":"select * from ttfund id=${PK}",
+	"delta_query":"select id from ttfund where FROM_UNIXTIME(`create_time`,'%Y-%m-%d %H:%i:%s')>'${LAST_UPDATE_TIME}'",
+	/* 删除无效数据 */
+	"deleted_pk_query":"",
+
+	"interval":"3s",
+	"field":[
+		{"name":"peo","store":true}
+	]
+}
