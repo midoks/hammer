@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 )
 
 type ArgsConn struct {
@@ -27,13 +28,27 @@ type Args struct {
 	Start   int
 }
 
+/** 替换注释 */
+func ReplaceConfComment(s string) string {
+	re := regexp.MustCompile(`(//.*)`)
+	s = re.ReplaceAllString(s, "")
+
+	re2 := regexp.MustCompile(`(?s)(/*(.*?)*/)`)
+	s = re2.ReplaceAllString(s, "")
+	return s
+}
+
+func Watcher() {
+
+}
+
 func Read(path string, call func(conf *Args)) {
-	rd, err := ioutil.ReadDir(path)
+	flist, err := ioutil.ReadDir(path)
 	if err != nil {
 		panic("conf is error!")
 		return
 	}
-	for _, fi := range rd {
+	for _, fi := range flist {
 		j := fmt.Sprintf("%s/%s/data.json", path, fi.Name())
 
 		f, err := os.Open(j)
@@ -44,8 +59,10 @@ func Read(path string, call func(conf *Args)) {
 			continue
 		}
 
+		b := ReplaceConfComment(string(c))
+
 		a := &Args{}
-		err = json.Unmarshal([]byte(c), &a)
+		err = json.Unmarshal([]byte(b), &a)
 		if err == nil {
 			a.Path = path
 			a.AppName = fi.Name()
