@@ -17,15 +17,14 @@
 	},
 	"pk":"id",
 
-	/* 全量导入 */
+	// 全量导入 
 	"query":"select * from tt_fund",
-	"start":0,
 	"step":1000,
 
-	/* 增量倒入 */
+	// 增量倒入
 	"delta_import_query":"select * from ttfund id=${PK}",
 	"delta_query":"select id from ttfund where FROM_UNIXTIME(`create_time`,'%Y-%m-%d %H:%i:%s')>'${LAST_UPDATE_TIME}'",
-	/* 删除无效数据 */
+	// 删除无效数据
 	"deleted_pk_query":"",
 
 	"interval":"3s",

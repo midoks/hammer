@@ -9,33 +9,34 @@ import (
 )
 
 type ArgsConn struct {
-	Localhost string
-	Port      int
-	User      string
-	Password  string
-	Db        string
-	Charset   string
+	Localhost string `json:"localhost"`
+	Port      int    `json:"port"`
+	User      string `json:"user"`
+	Password  string `json:"password"`
+	Db        string `json:"db"`
+	Charset   string `json:"charset"`
 }
 
 type Args struct {
-	Path     string
-	AppName  string
-	Type     string
-	Conn     ArgsConn
-	Pk       string
-	Query    string
-	Step     int
-	Start    int64
-	Interval string
+	Path       string
+	AppName    string
+	Type       string   `json:"type"`
+	Conn       ArgsConn `json:"conn"`
+	Pk         string   `json:"pk"`
+	Query      string   `json:"query"`
+	Step       int      `json:"step"`
+	Start      int64    `json:"start"`
+	Interval   string   `json:"interval"`
+	DeltaQuery string   `json:"delta_query"`
 }
 
 /** 替换注释 */
 func ReplaceConfComment(s string) string {
-	re := regexp.MustCompile(`(//.*)`)
-	s = re.ReplaceAllString(s, "")
+	singleLineRe := regexp.MustCompile(`(//.*)`)
+	s = singleLineRe.ReplaceAllString(s, "")
 
-	re2 := regexp.MustCompile(`(?s)(/*(.*?)*/)`)
-	s = re2.ReplaceAllString(s, "")
+	multLine := regexp.MustCompile(`(?s)(/*(.*)*/)`)
+	s = multLine.ReplaceAllString(s, "")
 	return s
 }
 

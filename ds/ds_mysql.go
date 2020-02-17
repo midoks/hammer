@@ -6,9 +6,10 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/midoks/hammer/configure"
-	"github.com/midoks/hammer/storage"
+	_ "github.com/midoks/hammer/storage"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -24,12 +25,12 @@ type DataSourceMySQL struct {
 	Conf     *configure.Args
 }
 
-func (ds *DataSourceMySQL) getResult(sql string) map[int]map[string]string {
+func (ds *DataSourceMySQL) getResult(sql string) (map[int]map[string]string, error) {
 	result := make(map[int]map[string]string)
 
 	rows, err := ds.Conn.Query(sql)
 	if err != nil {
-		return result
+		return result, err
 	}
 
 	cols, _ := rows.Columns()
@@ -55,33 +56,30 @@ func (ds *DataSourceMySQL) getResult(sql string) map[int]map[string]string {
 		i++
 	}
 	rows.Close()
-	return result
+	return result, nil
 }
 
 func (ds *DataSourceMySQL) getPage(p int64, s int) (map[int]map[string]string, error) {
 
 	result := make(map[int]map[string]string)
-	offset := int64(s) * int64(p)
-
-	err := ds.SS.Read(ds.getTmpFile())
-	var mSql string
+	// offset := p * int64(s)
 
 	query, err := ds.getQuerySql()
 	if err != nil {
 		return result, err
 	}
 
-	if err != nil {
+	err = ds.SS.Read(ds.getTmpFile())
+	mSql := ""
+
+	if err == nil {
 		pk := ds.getPk()
-		mSql = fmt.Sprintf("%s where %s>%d limit %d offset %d", query, pk, ds.SS.ID, s, offset)
+		mSql = fmt.Sprintf("%s where %s>%d limit %d", query, pk, ds.SS.PK, s)
 	} else {
 		mSql = fmt.Sprintf("%s limit %d offset %d", query, s, p)
 	}
 
-	log.Println(mSql)
-
-	result = ds.getResult(mSql)
-	return result, nil
+	return ds.getResult(mSql)
 }
 
 func (ds *DataSourceMySQL) Import() {
@@ -102,7 +100,7 @@ func (ds *DataSourceMySQL) Import() {
 		i++
 
 		//间隔时间
-		time.Sleep(time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -110,9 +108,14 @@ func (ds *DataSourceMySQL) DeltaData() {
 
 	// result := make(map[int]map[string]string)
 
-	// mSql := fmt.Sprintf("%s limit 0 offset %d", ds.getQuerySql(), 0)
-	// rows, err := ds.Conn.Query(mSql)
+	deltaSql, err := ds.getDeltaQuerySql()
 
+	if err != nil {
+		log.Println(deltaSql, err)
+		return
+	}
+	result, err := ds.getResult(deltaSql)
+	fmt.Println(result, err)
 	// if err != nil {
 	// 	return
 	// }
@@ -153,11 +156,11 @@ func (ds *DataSourceMySQL) DeleteData() {
 func (ds *DataSourceMySQL) Task() {
 	for {
 		d := <-ds.DataChan
-		sl := storage.OpenStorage(storage.ENGINE_TYPE_LUCENE)
 		dlen := len(d)
-		for i := 0; i < dlen; i++ {
-			sl.Add(d[i])
-		}
+		// sl := storage.OpenStorage(storage.ENGINE_TYPE_LUCENE)
+		// for i := 0; i < dlen; i++ {
+		// 	sl.Add(d[i])
+		// }
 
 		updateLastId, err := strconv.ParseInt(d[dlen-1]["id"], 10, 64)
 		if err != nil {
@@ -176,8 +179,8 @@ func (ds *DataSourceMySQL) Init(conf *configure.Args) {
 	ds.Conf = conf
 	ctime := time.Now().Format("2006-01-02 15:04:05")
 	ds.SS = SaveStatus{
-		ID:          int64(0),
-		CurrentTime: ctime,
+		PK:              int64(0),
+		LastUpdatedTime: ctime,
 	}
 	ds.InitConn()
 }
@@ -210,9 +213,28 @@ func (ds *DataSourceMySQL) getTmpFile() string {
 
 func (ds *DataSourceMySQL) getQuerySql() (string, error) {
 	if ds.Conf.Query == "" {
-		return ds.Conf.Query, errors.New("query args is empty!")
+		return ds.Conf.Query, errors.New("get query is empty!")
 	}
 	return ds.Conf.Query, nil
+}
+
+func (ds *DataSourceMySQL) replaceSqlVar(s string) string {
+
+	return s
+}
+
+func (ds *DataSourceMySQL) getDeltaQuerySql() (string, error) {
+	if ds.Conf.DeltaQuery == "" {
+		return ds.Conf.DeltaQuery, errors.New("get delta query is empty!")
+	}
+
+	err := ds.SS.Read(ds.getTmpFile())
+	if err != nil {
+		return ds.Conf.DeltaQuery, errors.New("get delta query is fail, program is not running!")
+	}
+
+	ds.Conf.DeltaQuery = strings.Replace(ds.Conf.DeltaQuery, "${LAST_UPDATE_TIME}", ds.SS.LastUpdatedTime, -1)
+	return ds.Conf.DeltaQuery, nil
 }
 
 func (ds *DataSourceMySQL) getPk() string {

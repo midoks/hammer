@@ -21,8 +21,8 @@ type DateSourceIf interface {
 }
 
 type SaveStatus struct {
-	ID          int64  `json:"id"`
-	CurrentTime string `json:"current_time"`
+	PK              int64  `json:"pk"`
+	LastUpdatedTime string `json:"last_updated_time"`
 }
 
 func (ss *SaveStatus) Read(path string) error {
@@ -42,10 +42,10 @@ func (ss *SaveStatus) Read(path string) error {
 	return nil
 }
 
-func (ss *SaveStatus) Save(id int64, path string) error {
+func (ss *SaveStatus) Save(pk int64, path string) error {
 	ctime := time.Now().Format("2006-01-02 15:04:05")
-	ss.ID = id
-	ss.CurrentTime = ctime
+	ss.PK = pk
+	ss.LastUpdatedTime = ctime
 
 	b, err := json.Marshal(ss)
 	if err != nil {
