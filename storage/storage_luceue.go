@@ -29,16 +29,13 @@ func (sl *StorageLucene) Add(data map[string]string) {
 	conf := index.NewIndexWriterConfig(util.VERSION_LATEST, analyzer) //Indexwriter的配置器
 	writer, _ := index.NewIndexWriter(directory, conf)                //index writer
 
-	// for k, v := range data {
-	// 	fmt.Println(k, v)
-	// 	d := document.NewDocument()
-	// 	//创建doucument
-	// 	d.Add(document.NewTextFieldFromString(k, v, document.STORE_YES)) //添加域信息
-	// 	writer.AddDocument(d.Fields())
-	// }
+	name := ""
+	for _, v := range data {
+		name += fmt.Sprintf("%s|==|", v)
+	}
 
-	d := document.NewDocument()                                                      //创建doucument
-	d.Add(document.NewTextFieldFromString("text", data["name"], document.STORE_YES)) //添加域信息
+	d := document.NewDocument()                                              //创建doucument
+	d.Add(document.NewTextFieldFromString("text", name, document.STORE_YES)) //添加域信息
 	fmt.Println("d.Fields():", d.Fields())
 	writer.AddDocument(d.Fields())
 	defer writer.Close()

@@ -44,7 +44,10 @@ func (ss *SaveStatus) Read(path string) error {
 
 func (ss *SaveStatus) Save(pk int64, path string) error {
 	ctime := time.Now().Format("2006-01-02 15:04:05")
-	ss.PK = pk
+
+	if pk > ss.PK {
+		ss.PK = pk
+	}
 	ss.LastUpdatedTime = ctime
 
 	b, err := json.Marshal(ss)

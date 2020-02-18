@@ -18,16 +18,19 @@ type ArgsConn struct {
 }
 
 type Args struct {
-	Path       string
-	AppName    string
-	Type       string   `json:"type"`
-	Conn       ArgsConn `json:"conn"`
-	Pk         string   `json:"pk"`
-	Query      string   `json:"query"`
-	Step       int      `json:"step"`
-	Start      int64    `json:"start"`
-	Interval   string   `json:"interval"`
-	DeltaQuery string   `json:"delta_query"`
+	Path             string
+	AppName          string
+	Type             string   `json:"type"`
+	Conn             ArgsConn `json:"conn"`
+	Pk               string   `json:"pk"`
+	Query            string   `json:"query"`
+	Step             int      `json:"step"`
+	Start            int64    `json:"start"`
+	Interval         string   `json:"interval"`
+	DeltaQuery       string   `json:"delta_query"`
+	DeltaImportQuery string   `json:"delta_import_query"`
+	DeletedPkQuery   string   `json:"deleted_pk_query"`
+	DeletedQuery     string   `json:"deleted_query"`
 }
 
 /** 替换注释 */

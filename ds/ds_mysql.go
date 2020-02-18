@@ -106,47 +106,36 @@ func (ds *DataSourceMySQL) Import() {
 
 func (ds *DataSourceMySQL) DeltaData() {
 
-	// result := make(map[int]map[string]string)
-
 	deltaSql, err := ds.getDeltaQuerySql()
 
 	if err != nil {
 		log.Println(deltaSql, err)
 		return
 	}
-	result, err := ds.getResult(deltaSql)
-	fmt.Println(result, err)
-	// if err != nil {
-	// 	return
-	// }
 
-	// cols, _ := rows.Columns()
+	deltaResult, err := ds.getResult(deltaSql)
+	if err != nil {
+		log.Println(deltaResult, err)
+		return
+	}
 
-	// scans := make([]interface{}, len(cols))
-	// vals := make([][]byte, len(cols))
+	pk := ds.getPk()
+	for i := 0; i < len(deltaResult); i++ {
 
-	// for k, _ := range vals {
-	// 	scans[k] = &vals[k]
-	// }
+		pkSql, err := ds.getDeltaImportQuerySql(deltaResult[i][pk])
 
-	// i := 0
-	// for rows.Next() {
+		if err != nil {
+			log.Println(pkSql, err)
+			continue
+		}
 
-	// 	rows.Scan(scans...)
-	// 	row := make(map[string]string)
-	// 	for k, v := range vals {
-	// 		key := cols[k]
-	// 		row[key] = string(v)
-	// 	}
-
-	// 	result[i] = row
-	// 	i++
-	// }
-	// rows.Close()
-
-	// fmt.Println(result)
-
-	// ds.DataChan <- result
+		result, err := ds.getResult(pkSql)
+		if err != nil {
+			log.Println(result, err)
+			continue
+		}
+		ds.DataChan <- result
+	}
 }
 
 func (ds *DataSourceMySQL) DeleteData() {
@@ -154,15 +143,19 @@ func (ds *DataSourceMySQL) DeleteData() {
 }
 
 func (ds *DataSourceMySQL) Task() {
+	pk := ds.getPk()
 	for {
 		d := <-ds.DataChan
 		dlen := len(d)
 		// sl := storage.OpenStorage(storage.ENGINE_TYPE_LUCENE)
-		// for i := 0; i < dlen; i++ {
-		// 	sl.Add(d[i])
-		// }
 
-		updateLastId, err := strconv.ParseInt(d[dlen-1]["id"], 10, 64)
+		for i := 0; i < dlen; i++ {
+
+			fmt.Println(d[i])
+			// /sl.Add(d[i])
+		}
+
+		updateLastId, err := strconv.ParseInt(d[dlen-1][pk], 10, 64)
 		if err != nil {
 			log.Println(err)
 		}
@@ -218,11 +211,6 @@ func (ds *DataSourceMySQL) getQuerySql() (string, error) {
 	return ds.Conf.Query, nil
 }
 
-func (ds *DataSourceMySQL) replaceSqlVar(s string) string {
-
-	return s
-}
-
 func (ds *DataSourceMySQL) getDeltaQuerySql() (string, error) {
 	if ds.Conf.DeltaQuery == "" {
 		return ds.Conf.DeltaQuery, errors.New("get delta query is empty!")
@@ -235,6 +223,37 @@ func (ds *DataSourceMySQL) getDeltaQuerySql() (string, error) {
 
 	ds.Conf.DeltaQuery = strings.Replace(ds.Conf.DeltaQuery, "${LAST_UPDATE_TIME}", ds.SS.LastUpdatedTime, -1)
 	return ds.Conf.DeltaQuery, nil
+}
+
+func (ds *DataSourceMySQL) getDeltaImportQuerySql(pk string) (string, error) {
+	if ds.Conf.DeltaImportQuery == "" {
+		return ds.Conf.DeltaImportQuery, errors.New("get delta import query is empty!")
+	}
+	pkSQL := strings.Replace(ds.Conf.DeltaImportQuery, "${PK}", pk, -1)
+	return pkSQL, nil
+}
+
+func (ds *DataSourceMySQL) getDeletePkQuerySql(pk string) (string, error) {
+
+	if ds.Conf.DeletedPkQuery == "" {
+		return ds.Conf.DeletedPkQuery, errors.New("get deleted pk query is empty!")
+	}
+	pkSQL := strings.Replace(ds.Conf.DeletedPkQuery, "${PK}", pk, -1)
+	return pkSQL, nil
+}
+
+func (ds *DataSourceMySQL) getDeleteQuerySql() (string, error) {
+
+	if ds.Conf.DeletedQuery == "" {
+		return ds.Conf.DeletedQuery, errors.New("get delete query is empty!")
+	}
+	err := ds.SS.Read(ds.getTmpFile())
+	if err != nil {
+		return ds.Conf.DeletedQuery, errors.New("get deleted query is fail, program is not running!")
+	}
+
+	ds.Conf.DeletedQuery = strings.Replace(ds.Conf.DeletedQuery, "${LAST_UPDATE_TIME}", ds.SS.LastUpdatedTime, -1)
+	return ds.Conf.DeletedQuery, nil
 }
 
 func (ds *DataSourceMySQL) getPk() string {
