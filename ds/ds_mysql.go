@@ -82,6 +82,7 @@ func (ds *DataSourceMySQL) getPage(p int64, s int) (map[int]map[string]string, e
 	return ds.getResult(mSql)
 }
 
+// 全量到入
 func (ds *DataSourceMySQL) Import() {
 
 	var i int64 = 0
@@ -104,6 +105,7 @@ func (ds *DataSourceMySQL) Import() {
 	}
 }
 
+//增量导入
 func (ds *DataSourceMySQL) DeltaData() {
 
 	deltaSql, err := ds.getDeltaQuerySql()
@@ -138,6 +140,7 @@ func (ds *DataSourceMySQL) DeltaData() {
 	}
 }
 
+//删除无效数据
 func (ds *DataSourceMySQL) DeleteData() {
 
 }
