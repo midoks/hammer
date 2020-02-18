@@ -147,12 +147,10 @@ func (ds *DataSourceMySQL) Task() {
 	for {
 		d := <-ds.DataChan
 		dlen := len(d)
-		// sl := storage.OpenStorage(storage.ENGINE_TYPE_LUCENE)
+		sl := storage.OpenStorage(storage.ENGINE_TYPE_LUCENE)
 
 		for i := 0; i < dlen; i++ {
-
-			fmt.Println(d[i])
-			// /sl.Add(d[i])
+			sl.Add(d[i])
 		}
 
 		updateLastId, err := strconv.ParseInt(d[dlen-1][pk], 10, 64)
