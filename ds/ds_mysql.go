@@ -6,7 +6,7 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/midoks/hammer/configure"
-	_ "github.com/midoks/hammer/storage"
+	"github.com/midoks/hammer/storage"
 	"log"
 	"strconv"
 	"strings"
@@ -19,10 +19,12 @@ var (
 )
 
 type DataSourceMySQL struct {
-	Conn     *sql.DB
-	DataChan chan map[int]map[string]string
-	SS       SaveStatus
-	Conf     *configure.Args
+	Conn           *sql.DB
+	DataChan       chan map[int]map[string]string
+	DataDeltaChan  chan map[int]map[string]string
+	DataDeleteChan chan map[int]map[string]string
+	SS             SaveStatus
+	Conf           *configure.Args
 }
 
 func (ds *DataSourceMySQL) getResult(sql string) (map[int]map[string]string, error) {
@@ -98,10 +100,10 @@ func (ds *DataSourceMySQL) Import() {
 		}
 
 		ds.DataChan <- result
-		i++
 
 		//间隔时间
 		time.Sleep(1 * time.Second)
+		i++
 	}
 }
 
@@ -136,42 +138,86 @@ func (ds *DataSourceMySQL) DeltaData() {
 			log.Println(result, err)
 			continue
 		}
-		ds.DataChan <- result
+		ds.DataDeltaChan <- result
 	}
 }
 
 //删除无效数据
 func (ds *DataSourceMySQL) DeleteData() {
 
+	delSql, err := ds.getDeleteQuerySql()
+
+	if err != nil {
+		log.Println(delSql, err)
+		return
+	}
+
+	delResult, err := ds.getResult(delSql)
+	if err != nil {
+		log.Println(delResult, err)
+		return
+	}
+
+	ds.DataDeleteChan <- delResult
 }
 
 func (ds *DataSourceMySQL) Task() {
 	pk := ds.getPk()
-	for {
-		d := <-ds.DataChan
-		dlen := len(d)
-		sl := storage.OpenStorage(storage.ENGINE_TYPE_LUCENE)
 
-		for i := 0; i < dlen; i++ {
-			sl.Add(d[i])
-		}
+	insertFunc := func() {
+		for {
+			d := <-ds.DataChan
+			dlen := len(d)
+			sl := storage.OpenStorage(storage.ENGINE_TYPE_LUCENE)
 
-		updateLastId, err := strconv.ParseInt(d[dlen-1][pk], 10, 64)
-		if err != nil {
-			log.Println(err)
-		}
+			for i := 0; i < dlen; i++ {
+				sl.Add(d[i])
+			}
 
-		err = ds.SS.Save(updateLastId, ds.getTmpFile())
-		if err != nil {
-			log.Println(err)
+			updateLastId, err := strconv.ParseInt(d[dlen-1][pk], 10, 64)
+			if err != nil {
+				log.Println(err)
+			}
+
+			err = ds.SS.Save(updateLastId, ds.getTmpFile())
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
+
+	deltaFunc := func() {
+		for {
+			d := <-ds.DataDeleteChan
+			fmt.Println("delta:", d)
+		}
+	}
+
+	deleteFunc := func() {
+		for {
+			d := <-ds.DataDeleteChan
+			fmt.Println("delete:", d)
+		}
+	}
+
+	// 添加数据task
+	go insertFunc()
+	// 增量数据task
+	go deltaFunc()
+	// 删除数据task
+	go deleteFunc()
+
 }
 
 func (ds *DataSourceMySQL) Init(conf *configure.Args) {
+
 	ds.DataChan = make(chan map[int]map[string]string, 1000)
+	ds.DataDeleteChan = make(chan map[int]map[string]string, 1000)
+	ds.DataDeltaChan = make(chan map[int]map[string]string, 1000)
+
 	ds.Conf = conf
 	ctime := time.Now().Format("2006-01-02 15:04:05")
+
 	ds.SS = SaveStatus{
 		PK:              int64(0),
 		LastUpdatedTime: ctime,
