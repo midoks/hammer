@@ -3,7 +3,9 @@ package configure
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/fsnotify/fsnotify"
 	"io/ioutil"
+	"log"
 	"os"
 	"regexp"
 )
@@ -29,7 +31,6 @@ type Args struct {
 	Interval         string   `json:"interval"`
 	DeltaQuery       string   `json:"delta_query"`
 	DeltaImportQuery string   `json:"delta_import_query"`
-	DeletedPkQuery   string   `json:"deleted_pk_query"`
 	DeletedQuery     string   `json:"deleted_query"`
 }
 
@@ -43,9 +44,59 @@ func ReplaceConfComment(s string) string {
 	return s
 }
 
-/* 监控配置文件 */
-func Watcher() {
+func ListenConf(root string) {
 
+	watch, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Println("start:", err)
+	}
+	defer watch.Close()
+
+	err = watch.Add(root)
+	if err != nil {
+		log.Println("ff:", err)
+		return
+	}
+
+	go func() {
+		for {
+			select {
+			case ev := <-watch.Events:
+				{
+					if ev.Op&fsnotify.Create == fsnotify.Create {
+						log.Println("创建文件 : ", ev.Name)
+						watch.Add(ev.Name)
+					}
+					if ev.Op&fsnotify.Write == fsnotify.Write {
+						log.Println("写入文件 : ", ev.Name)
+					}
+					if ev.Op&fsnotify.Remove == fsnotify.Remove {
+						log.Println("删除文件 : ", ev.Name)
+						watch.Remove(ev.Name)
+					}
+					if ev.Op&fsnotify.Rename == fsnotify.Rename {
+						log.Println("重命名文件 : ", ev.Name)
+					}
+					if ev.Op&fsnotify.Chmod == fsnotify.Chmod {
+						log.Println("修改权限 : ", ev.Name)
+					}
+				}
+			case err := <-watch.Errors:
+				{
+					if err != nil {
+						log.Println("error: ", err)
+					}
+					return
+				}
+			}
+		}
+	}()
+	select {}
+}
+
+/* 监控配置文件 */
+func Watcher(path string) {
+	go ListenConf(path)
 }
 
 /* 读取配置文件 */
