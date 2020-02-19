@@ -189,14 +189,14 @@ func (ds *DataSourceMySQL) Task() {
 	deltaFunc := func() {
 		for {
 			d := <-ds.DataDeleteChan
-			fmt.Println("delta:", d)
+			log.Println("delta:", d)
 		}
 	}
 
 	deleteFunc := func() {
 		for {
 			d := <-ds.DataDeleteChan
-			fmt.Println("delete:", d)
+			log.Println("delete:", d)
 		}
 	}
 
