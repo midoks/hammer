@@ -7,7 +7,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 type ArgsConn struct {
@@ -44,6 +46,20 @@ func ReplaceConfComment(s string) string {
 	return s
 }
 
+func IsListenConf(cPath string, root string) bool {
+	vPath := strings.Replace(cPath, root, "", -1)
+	vPath = strings.Trim(vPath, "/")
+	vArr := strings.SplitN(vPath, "/", 2)
+
+	vArrLen := len(vArr)
+	if vArrLen == 2 && vArr[1] == "data.json" {
+		return true
+	} else if vArrLen == 1 {
+		return true
+	}
+	return false
+}
+
 func ListenConf(root string) {
 
 	watch, err := fsnotify.NewWatcher()
@@ -52,9 +68,19 @@ func ListenConf(root string) {
 	}
 	defer watch.Close()
 
+	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if IsListenConf(path, root) {
+			err := watch.Add(path)
+			if err != nil {
+				log.Println("filepath data.json file err:", err)
+			}
+		}
+		return nil
+	})
+
 	err = watch.Add(root)
 	if err != nil {
-		log.Println("ff:", err)
+		log.Println("root err:", err)
 		return
 	}
 
