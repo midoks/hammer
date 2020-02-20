@@ -91,7 +91,12 @@ func ListenConf(root string) {
 				{
 					if ev.Op&fsnotify.Create == fsnotify.Create {
 						log.Println("创建文件 : ", ev.Name)
-						watch.Add(ev.Name)
+						if IsListenConf(ev.Name, root) {
+							err := watch.Add(ev.Name)
+							if err != nil {
+								log.Println("ev.Op&fsnotify.Create == fsnotify.Create 创建文件 err:", err)
+							}
+						}
 					}
 					if ev.Op&fsnotify.Write == fsnotify.Write {
 						log.Println("写入文件 : ", ev.Name)
